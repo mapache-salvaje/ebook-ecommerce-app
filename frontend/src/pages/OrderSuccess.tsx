@@ -1,109 +1,75 @@
-import {
-  Container,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Button,
-  Box,
-} from '@mui/material';
-import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
+import React, { useEffect } from 'react';
+import { Container, Typography, Button, Box } from '@mui/material';
+import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { Elements } from '@stripe/react-stripe-js';
+import { useStripe } from '@stripe/react-stripe-js';
+import { stripePromise } from '../lib/stripe';
 import { useCart } from '../contexts/CartContext';
 
-export default function Cart() {
-  const { items, updateQuantity, total } = useCart();
+function OrderSuccessContent() {
   const navigate = useNavigate();
+  const stripe = useStripe();
+  const { clearCart } = useCart();
 
-  const handleCheckout = () => {
-    if (items.length === 0) return;
+  useEffect(() => {
+    if (!stripe) {
+      return;
+    }
 
-    navigate('/checkout', {
-      state: {
-        order: {
-          userId: 1, // This should come from auth context in a real app
-          items: items.map(({ bookId, quantity }) => ({ bookId, quantity })),
-        },
-      },
-    });
+    // Retrieve the "payment_intent_client_secret" query parameter
+    const clientSecret = new URLSearchParams(window.location.search).get(
+      'payment_intent_client_secret'
+    );
+
+    if (clientSecret) {
+      stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
+        if (paymentIntent && paymentIntent.status === 'succeeded') {
+          clearCart();
+        } else {
+          // Payment failed, redirect to cart
+          navigate('/cart');
+        }
+      });
+    } else {
+      // No client secret found, redirect to cart
+      navigate('/cart');
+    }
+  }, [stripe, clearCart, navigate]);
+
+  const handleContinueShopping = () => {
+    navigate('/');
   };
 
   return (
-    <Container sx={{ py: 4 }}>
+    <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+      <CheckCircleIcon sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
+      
       <Typography variant="h4" gutterBottom>
-        Shopping Cart
+        Thank you for your purchase!
+      </Typography>
+      
+      <Typography color="text.secondary" paragraph>
+        Your order has been successfully processed. You will receive an email confirmation shortly.
       </Typography>
 
-      {items.length === 0 ? (
-        <Typography>Your cart is empty</Typography>
-      ) : (
-        <>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Book</TableCell>
-                  <TableCell align="right">Price</TableCell>
-                  <TableCell align="center">Quantity</TableCell>
-                  <TableCell align="right">Total</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.bookId}>
-                    <TableCell>{item.title}</TableCell>
-                    <TableCell align="right">${item.price.toFixed(2)}</TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={() => updateQuantity(item.bookId, -1)}
-                      >
-                        <RemoveIcon />
-                      </IconButton>
-                      <Typography component="span" sx={{ mx: 2 }}>
-                        {item.quantity}
-                      </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => updateQuantity(item.bookId, 1)}
-                      >
-                        <AddIcon />
-                      </IconButton>
-                    </TableCell>
-                    <TableCell align="right">
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                <TableRow>
-                  <TableCell colSpan={3}>
-                    <Typography variant="subtitle1">Total</Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="subtitle1">${total.toFixed(2)}</Typography>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={handleCheckout}
-              disabled={items.length === 0}
-            >
-              Proceed to Checkout
-            </Button>
-          </Box>
-        </>
-      )}
+      <Box sx={{ mt: 4 }}>
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleContinueShopping}
+        >
+          Continue Shopping
+        </Button>
+      </Box>
     </Container>
+  );
+}
+
+export default function OrderSuccess() {
+  return (
+    <Elements stripe={stripePromise}>
+      <OrderSuccessContent />
+    </Elements>
   );
 } 
