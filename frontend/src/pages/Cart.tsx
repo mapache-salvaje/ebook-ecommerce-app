@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Container,
   Typography,
@@ -16,18 +15,20 @@ import {
 import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Cart() {
   const { items, updateQuantity, total } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const handleCheckout = () => {
-    if (items.length === 0) return;
+    if (items.length === 0 || !user) return;
 
     navigate('/checkout', {
       state: {
         order: {
-          userId: 1, // This should come from auth context in a real app
+          userId: user.id,
           items: items.map(({ bookId, quantity }) => ({ bookId, quantity })),
         },
       },

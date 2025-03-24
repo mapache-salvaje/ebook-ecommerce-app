@@ -35,8 +35,6 @@ export default function CheckoutForm({ onSuccess, onError }: CheckoutFormProps) 
 
       if (error) {
         onError(error.message || 'An error occurred during payment.');
-      } else {
-        onSuccess();
       }
     } catch (err) {
       onError('An unexpected error occurred.');
