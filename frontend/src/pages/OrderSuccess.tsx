@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Container, Typography, Button, Box } from '@mui/material';
 import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -49,7 +49,7 @@ function OrderSuccessContent() {
         Thank you for your purchase!
       </Typography>
       
-      <Typography color="text.secondary" paragraph>
+      <Typography color="text.secondary">
         Your order has been successfully processed. You will receive an email confirmation shortly.
       </Typography>
 
