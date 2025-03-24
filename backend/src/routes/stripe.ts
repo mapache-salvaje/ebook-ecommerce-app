@@ -78,8 +78,26 @@ router.post('/webhook', async (req: Request, res: Response) => {
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const orderId = parseInt(paymentIntent.metadata.orderId);
+        console.log('Payment Intent:', {
+          id: paymentIntent.id,
+          metadata: paymentIntent.metadata,
+          amount: paymentIntent.amount,
+          status: paymentIntent.status
+        });
 
+        const orderIdStr = paymentIntent.metadata.orderId;
+        if (!orderIdStr) {
+          console.error('No orderId found in payment intent metadata');
+          return res.status(400).json({ error: 'No orderId found in payment intent metadata' });
+        }
+
+        const orderId = parseInt(orderIdStr);
+        if (isNaN(orderId)) {
+          console.error('Invalid orderId in metadata:', orderIdStr);
+          return res.status(400).json({ error: 'Invalid orderId in payment intent metadata' });
+        }
+
+        console.log('Attempting to update order:', orderId);
         await prisma.order.update({
           where: { id: orderId },
           data: { status: 'completed' },
@@ -89,8 +107,26 @@ router.post('/webhook', async (req: Request, res: Response) => {
       }
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const orderId = parseInt(paymentIntent.metadata.orderId);
+        console.log('Payment Intent:', {
+          id: paymentIntent.id,
+          metadata: paymentIntent.metadata,
+          amount: paymentIntent.amount,
+          status: paymentIntent.status
+        });
 
+        const orderIdStr = paymentIntent.metadata.orderId;
+        if (!orderIdStr) {
+          console.error('No orderId found in payment intent metadata');
+          return res.status(400).json({ error: 'No orderId found in payment intent metadata' });
+        }
+
+        const orderId = parseInt(orderIdStr);
+        if (isNaN(orderId)) {
+          console.error('Invalid orderId in metadata:', orderIdStr);
+          return res.status(400).json({ error: 'Invalid orderId in payment intent metadata' });
+        }
+
+        console.log('Attempting to update order:', orderId);
         await prisma.order.update({
           where: { id: orderId },
           data: { status: 'failed' },
