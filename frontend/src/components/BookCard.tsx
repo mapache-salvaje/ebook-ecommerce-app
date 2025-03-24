@@ -51,10 +51,7 @@ export default function BookCard({ book }: BookCardProps) {
         <Button size="small" color="primary" onClick={handleAddToCart}>
           Add to Cart
         </Button>
-        <Button size="small" color="primary">
-          Learn More
-        </Button>
       </CardActions>
     </Card>
   );
-}
+} 

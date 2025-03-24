@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
 import { Box, Container, Typography, Alert } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';

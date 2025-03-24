@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import bookRoutes from './routes/books';
 import orderRoutes from './routes/orders';
 import stripeRoutes from './routes/stripe';
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/stripe', stripeRoutes);
@@ -27,4 +29,4 @@ app.get('/health', (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-});
+}); 
