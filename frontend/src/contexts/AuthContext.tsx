@@ -17,6 +17,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Create a single axios instance for the app
+const api = axios.create({
+  baseURL: 'http://localhost:3000/api'
+});
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const storedUser = localStorage.getItem('user');
@@ -28,16 +33,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Set up axios interceptor to include token in all requests
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-    }
+    const interceptor = api.interceptors.request.use(
+      (config) => {
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      api.interceptors.request.eject(interceptor);
+    };
   }, [token]);
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/login', {
+      const response = await api.post('/auth/login', {
         email,
         password
       });
@@ -47,7 +62,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(token);
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } catch (error) {
       throw new Error('Login failed');
     }
@@ -55,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = async (name: string, email: string, password: string) => {
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/signup', {
+      const response = await api.post('/auth/signup', {
         name,
         email,
         password
@@ -66,7 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(token);
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } catch (error: any) {
       if (error.response?.data?.error) {
         throw new Error(error.response.data.error);
@@ -80,7 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    delete axios.defaults.headers.common['Authorization'];
   };
 
   return (

@@ -1,9 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Container, Typography, Button, Box } from '@mui/material';
 import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { Elements } from '@stripe/react-stripe-js';
-import { useStripe } from '@stripe/react-stripe-js';
+import { Elements, useStripe } from '@stripe/react-stripe-js';
 import { stripePromise } from '../lib/stripe';
 import { useCart } from '../contexts/CartContext';
 
@@ -11,35 +10,61 @@ function OrderSuccessContent() {
   const navigate = useNavigate();
   const stripe = useStripe();
   const { clearCart } = useCart();
+  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    if (!stripe) {
-      return;
-    }
+    let mounted = true;
 
-    // Retrieve the "payment_intent_client_secret" query parameter
-    const clientSecret = new URLSearchParams(window.location.search).get(
-      'payment_intent_client_secret'
-    );
+    const verifyPayment = async () => {
+      if (!stripe) {
+        return;
+      }
 
-    if (clientSecret) {
-      stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
-        if (paymentIntent && paymentIntent.status === 'succeeded') {
-          clearCart();
+      try {
+        const clientSecret = new URLSearchParams(window.location.search).get(
+          'payment_intent_client_secret'
+        );
+
+        if (clientSecret) {
+          const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
+          if (mounted) {
+            if (paymentIntent && paymentIntent.status === 'succeeded') {
+              clearCart();
+            } else {
+              navigate('/cart');
+            }
+          }
         } else {
-          // Payment failed, redirect to cart
           navigate('/cart');
         }
-      });
-    } else {
-      // No client secret found, redirect to cart
-      navigate('/cart');
-    }
+      } catch (error) {
+        console.error('Payment verification failed:', error);
+        navigate('/cart');
+      } finally {
+        if (mounted) {
+          setIsVerifying(false);
+        }
+      }
+    };
+
+    verifyPayment();
+
+    return () => {
+      mounted = false;
+    };
   }, [stripe, clearCart, navigate]);
 
   const handleContinueShopping = () => {
     navigate('/');
   };
+
+  if (isVerifying) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+        <Typography>Verifying your payment...</Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
